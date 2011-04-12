@@ -1,0 +1,193 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use FindBin;
+use AnyEvent;
+use AnyEvent::IRC::Client;
+use AnyEvent::HTTP;
+use Digest::MD5 ();
+use Encode ();
+use JSON::XS ();
+use HTML::Entities ();
+use Net::Twitter::Lite;
+use XML::Feed;
+
+our $VERSION = '0.01';
+
+my $env = $ARGV[0] || 'perlnews';
+my $debug = ($env =~ /^test/) ? 1 : 0;
+my $cachedir = "$FindBin::Bin/cache/$env";
+my $confdir  = "$FindBin::Bin/conf";
+my %conf = %{ load_config() || {} };
+my $channel = $conf{irc}{channel};
+my %urls = load_urls();
+my $cv = AnyEvent->condvar;
+my $irc = AnyEvent::IRC::Client->new;
+my %watchers;
+my %lmod;
+my $twitter;
+
+$irc->reg_cb(
+  connect => sub {
+    my ($self, $err) = @_;
+    if (defined $err) {
+      print STDERR "Couldn't connect to server: $err\n";
+      return;
+    }
+  },
+  registered => sub { $irc->enable_ping(60) },
+  disconnect => sub { print STDERR "disconnected: $_[1]\n"; },
+);
+$irc->connect(
+  $conf{irc}{host},
+  $conf{irc}{port},
+  $conf{irc}{extra},
+);
+$irc->send_srv('JOIN', $channel);
+
+$twitter = Net::Twitter::Lite->new(%{ $conf{twitter} }) if $conf{twitter};
+
+set_watchers();
+
+$SIG{HUP} = sub {
+  print "reloading...\n" if $debug;
+  %urls = load_urls();
+  delete $watchers{$_} for keys %watchers;
+  set_watchers();
+  print "done\n\n" if $debug;
+  return;
+};
+
+$cv->wait;
+
+sub set_watchers {
+  for my $name (keys %urls) {
+    print STDERR "loading $name\n" if $debug;
+    $watchers{$name} = AnyEvent->timer(
+      interval => 60,
+      cb => sub {
+        my %req_headers;
+        if (defined $lmod{$name}) {
+          $req_headers{'If-Modified-Since'} = $lmod{$name};
+        }
+        http_get $urls{$name}, headers => \%req_headers, sub {
+          my ($xml, $headers) = @_;
+          if ($headers->{Status} =~ /^2/) {
+            my $cached = load_cache($name);
+            my $dry_run = !cache_exists($name);
+            my $cache = {};
+            eval {
+              my $feed = XML::Feed->parse(\$xml);
+              my $title = feed_title($feed->title || $name);
+              for my $entry (reverse $feed->entries) {
+                my $msg = $entry->title;
+                if (my $author = $entry->author) {
+                  $author =~ s/nobody\@example\.com \((.+)\)/$1/;
+                  $msg .= " ($author)";
+                }
+                $msg .= " - ".$entry->link;
+                $msg =~ s/[\n\r]/ /g;
+                $msg = HTML::Entities::decode_entities($msg);
+                $msg = Encode::encode_utf8($msg) if utf8::is_utf8($msg);
+                my $md5 = Digest::MD5::md5_hex($msg);
+                if (!$cached->{$md5} && !$dry_run or $debug) {
+                  local $SIG{__WARN__} = sub {};
+                  $irc->send_chan($channel, "PRIVMSG", $channel,
+                    "\001ACTION \002$title:\002 $msg\001"
+                  );
+                  eval { $twitter->update("$title: $msg") } if $twitter;
+                }
+                $cache->{$md5} = 1;
+              }
+            };
+            warn $@ if $@ && $debug;
+            save_cache($name, $cache);
+            $lmod{$name} = $headers->{'last-modified'};
+          }
+          elsif ($headers->{Status} =~ /^3/) {
+            # do nothing
+          }
+          else {
+            # warn "$headers->{Status} $headers->{Reason}";
+          }
+        };
+      },
+    );
+  }
+}
+
+sub slurp { local $/; open my $fh, '<', shift or die $!; <$fh> }
+
+sub load_cache {
+  my $file = "$cachedir/$_[0].json";
+  return {} unless -f $file;
+  return eval { JSON::XS::decode_json(slurp($file)) } or {};
+}
+
+sub save_cache {
+  mkdir $cachedir unless -d $cachedir;
+  my $file = "$cachedir/$_[0].json";
+  open my $fh, '>', $file or die $!;
+  print $fh JSON::XS::encode_json($_[1] || {});
+}
+
+sub cache_exists {
+  -f "$cachedir/$_[0].json";
+}
+
+sub load_urls {
+  map { split /\s+/ }
+  grep { !/^#/ }
+  split /\n/,
+  slurp("$confdir/$env.txt");
+}
+
+sub load_config {
+  my $file = "$confdir/$env.conf";
+  die "$file not found" unless -f $file;
+  do $file;
+}
+
+sub feed_title {
+  my $title = shift;
+
+  $title =~ s/^AnnoCPAN Recent Notes/AnnoCPAN/;
+  $title =~ s/^Recent CPAN distributions/AnnoCPAN/;
+  $title =~ s/^Perl.com Perl.com/Perl.com/;
+  $title =~ s/^use Perl Journals/Journals/;
+  $title =~ s/^use.perl journals/Journals/;
+  $title =~ s/^jobs\.perl\.org/Jobs/;
+  $title =~ s/^The Perl Foundation/PerlFoundation/;
+  $title =~ s/^search\.cpan\.org/CPAN/;
+  $title =~ s/^Newest perlmonks questions/PerlMonks/;
+  $title =~ s/^Ratings and Reviews for CPAN/CPAN Ratings/;
+  $title =~ s/ironman/Iron Man/;
+  $title;
+}
+
+__END__
+
+=head1 NAME
+
+perlnews - perlnews server
+
+=head1 SYNOPSIS
+
+  ./perlnews &
+
+=head1 DESCRIPTION
+
+Join #news at irc.perl.org, or follow @perlnews at twitter.
+
+=head1 AUTHOR
+
+Kenichi Ishigaki, E<lt>ishigaki@cpan.orgE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2011 by Kenichi Ishigaki.
+
+This program is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
+
+=cut

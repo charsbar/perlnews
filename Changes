@@ -1,0 +1,4 @@
+Revision history for perlnews
+
+0.01 2011/04/06
+  - refactored with AnyEvent
