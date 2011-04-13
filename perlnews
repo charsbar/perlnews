@@ -36,7 +36,7 @@ $irc->reg_cb(
     }
   },
   registered => sub { $irc->enable_ping(60) },
-  disconnect => sub { print STDERR "disconnected: $_[1]\n"; },
+  disconnect => sub { print STDERR "disconnected: $_[1]\n"; exit },
 );
 $irc->connect(
   $conf{irc}{host},
