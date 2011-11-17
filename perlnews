@@ -85,7 +85,9 @@ sub set_watchers {
                   $author =~ s/nobody\@example\.com \((.+)\)/$1/;
                   $msg .= " ($author)";
                 }
-                $msg .= " - ".$entry->link;
+                my $link = $entry->link;
+                $link =~ s/ /%20/g;
+                $msg .= " - link";
                 $msg =~ s/[\n\r]/ /g;
                 $msg = HTML::Entities::decode_entities($msg);
                 $msg = Encode::encode_utf8($msg) if utf8::is_utf8($msg);
