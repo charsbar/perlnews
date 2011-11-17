@@ -87,7 +87,7 @@ sub set_watchers {
                 }
                 my $link = $entry->link;
                 $link =~ s/ /%20/g;
-                $msg .= " - link";
+                $msg .= " - $link";
                 $msg =~ s/[\n\r]/ /g;
                 $msg = HTML::Entities::decode_entities($msg);
                 $msg = Encode::encode_utf8($msg) if utf8::is_utf8($msg);
