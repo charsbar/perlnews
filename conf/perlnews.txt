@@ -7,7 +7,6 @@ perlbuzz	http://feeds.feedburner.com/PerlBuzz
 cpanratings	http://plasmasturm.org/feeds/cpanratings/
 blogs.perl	http://blogs.perl.org/atom.xml
 perl.com	http://www.perl.com/pub/atom.xml
-perlnews	http://perlnews.org/feed/
 perlcast	http://www.perlcast.com/rss/current.xml
 ironman	http://ironman.enlightenedperl.org/atom.xml
 perlmonks	http://www.peeron.com/tickers/pm.xml
