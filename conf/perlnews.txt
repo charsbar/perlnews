@@ -3,7 +3,7 @@ metacpan    https://metacpan.org/feed/recent
 perlfoundation	http://news.perlfoundation.org/atom.xml
 jobs.perl	http://jobs.perl.org/rss/standard.rss
 #annocpan	http://annocpan.org/recent.rss
-log.perl	http://log.perl.org/index.rdf
+log.perl	http://log.perl.org/feeds/posts/default
 perlbuzz	http://feeds.feedburner.com/PerlBuzz
 cpanratings	http://plasmasturm.org/feeds/cpanratings/
 blogs.perl	http://blogs.perl.org/atom.xml
