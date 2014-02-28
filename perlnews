@@ -9,7 +9,7 @@ use Digest::MD5 ();
 use Encode ();
 use JSON::XS ();
 use HTML::Entities ();
-use Net::Twitter::Lite;
+use Net::Twitter::Lite::WithAPIv1_1;
 use XML::Feed;
 
 our $VERSION = '0.01';
@@ -45,7 +45,7 @@ $irc->connect(
 );
 $irc->send_srv('JOIN', $channel);
 
-$twitter = Net::Twitter::Lite->new(%{ $conf{twitter} }) if $conf{twitter};
+$twitter = Net::Twitter::Lite::WithAPIv1_1->new(%{ $conf{twitter} }) if $conf{twitter};
 
 set_watchers();
 
