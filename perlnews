@@ -164,6 +164,7 @@ sub feed_title {
   $title =~ s/^Newest perlmonks questions/PerlMonks/;
   $title =~ s/^Ratings and Reviews for CPAN/CPAN Ratings/;
   $title =~ s/ironman/Iron Man/;
+  $title =~ s/Recent CPAN uploads \- MetaCPAN/CPAN/;
   $title;
 }
 

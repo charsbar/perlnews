@@ -1,4 +1,5 @@
-search.cpan	http://search.cpan.org/uploads.rdf
+#search.cpan	http://search.cpan.org/uploads.rdf
+metacpan    https://metacpan.org/feed/recent
 perlfoundation	http://news.perlfoundation.org/atom.xml
 jobs.perl	http://jobs.perl.org/rss/standard.rss
 #annocpan	http://annocpan.org/recent.rss
