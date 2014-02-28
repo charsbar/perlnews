@@ -1,13 +1,13 @@
 search.cpan	http://search.cpan.org/uploads.rdf
 perlfoundation	http://news.perlfoundation.org/atom.xml
 jobs.perl	http://jobs.perl.org/rss/standard.rss
-annocpan	http://annocpan.org/recent.rss
+#annocpan	http://annocpan.org/recent.rss
 log.perl	http://log.perl.org/index.rdf
 perlbuzz	http://feeds.feedburner.com/PerlBuzz
 cpanratings	http://plasmasturm.org/feeds/cpanratings/
 blogs.perl	http://blogs.perl.org/atom.xml
 perl.com	http://www.perl.com/pub/atom.xml
-perlcast	http://www.perlcast.com/rss/current.xml
+#perlcast	http://www.perlcast.com/rss/current.xml
 ironman	http://ironman.enlightenedperl.org/atom.xml
 perlmonks	http://www.peeron.com/tickers/pm.xml
 prepan	http://prepan.org/feed
