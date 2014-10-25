@@ -147,6 +147,10 @@ sub load_cache {
 }
 
 sub save_cache {
+  if (!$_[1] or !%{$_[1]}) {
+    warnf("empty cache: $_[0]");
+    return;
+  }
   mkdir $cachedir unless -d $cachedir;
   my $file = "$cachedir/$_[0].json";
   open my $fh, '>', $file or die $!;
