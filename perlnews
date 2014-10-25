@@ -30,6 +30,7 @@ my $irc = AnyEvent::IRC::Client->new;
 my %watchers;
 my %lmod;
 my $twitter;
+my %status;
 
 mkpath $logdir unless -d $logdir;
 my $logger = File::Stamped->new(pattern => "$logdir/$env.log.%Y%m");
@@ -77,6 +78,9 @@ sub set_watchers {
     $watchers{$name} = AnyEvent->timer(
       interval => 60,
       cb => sub {
+        if ($status{$name}++) {
+          warnf("$name is still processing");
+        }
         my %req_headers;
         if (defined $lmod{$name}) {
           $req_headers{'If-Modified-Since'} = $lmod{$name};
@@ -128,6 +132,7 @@ sub set_watchers {
             warnf("$name: $headers->{Status} $headers->{Reason}");
           }
         };
+        $status{$name} = 0;
       },
     );
   }
