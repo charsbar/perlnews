@@ -111,7 +111,7 @@ sub set_watchers {
                 $msg = HTML::Entities::decode_entities($msg);
                 $msg = Encode::encode_utf8($msg) if utf8::is_utf8($msg);
                 my $md5 = Digest::MD5::md5_hex($msg);
-                if (!$cached->{$md5} && !$dry_run or $debug) {
+                if (!$cached->{$link} && !$dry_run or $debug) {
                   local $SIG{__WARN__} = sub {};
                   $irc->send_chan($channel, "PRIVMSG", $channel,
                     "\001ACTION \002$title:\002 $msg\001"
@@ -119,7 +119,7 @@ sub set_watchers {
                   eval { $twitter->update("$title: $msg") } if $twitter;
                   infof("$name: $msg");
                 }
-                $cache->{$md5} = 1;
+                $cache->{$link} = $md5;
               }
             };
             warn $@ if $@ && $debug;
