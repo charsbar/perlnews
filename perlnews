@@ -152,7 +152,7 @@ sub save_cache {
     warnf("empty cache: $_[0]");
     return;
   }
-  mkdir $cachedir unless -d $cachedir;
+  mkpath $cachedir unless -d $cachedir;
   my $file = "$cachedir/$_[0].json";
   open my $fh, '>', "$file.tmp" or die $!;
   flock $fh, LOCK_EX or die $!;
