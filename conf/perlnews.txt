@@ -5,7 +5,7 @@ jobs.perl	http://jobs.perl.org/rss/standard.rss
 #annocpan	http://annocpan.org/recent.rss
 log.perl	http://log.perl.org/feeds/posts/default
 perlbuzz	http://feeds.feedburner.com/PerlBuzz
-cpanratings	http://plasmasturm.org/feeds/cpanratings/
+#cpanratings	http://plasmasturm.org/feeds/cpanratings/
 blogs.perl	http://blogs.perl.org/atom.xml
 perl.com	http://www.perl.com/pub/atom.xml
 #perlcast	http://www.perlcast.com/rss/current.xml
