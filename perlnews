@@ -7,8 +7,11 @@ use AnyEvent::IRC::Client;
 use AnyEvent::HTTP;
 use Digest::MD5 ();
 use Encode ();
+use File::Path;
+use File::Stamped;
 use JSON::XS ();
 use HTML::Entities ();
+use Log::Minimal;
 use Net::Twitter::Lite::WithAPIv1_1;
 use XML::Feed;
 
@@ -19,6 +22,7 @@ my $debug = ($env =~ /^test/) ? 1 : 0;
 my $cachedir = "$FindBin::Bin/cache/$env";
 my $confdir  = "$FindBin::Bin/conf";
 my %conf = %{ load_config() || {} };
+my $logdir = "$FindBin::Bin/log/$env";
 my $channel = $conf{irc}{channel};
 my %urls = load_urls();
 my $cv = AnyEvent->condvar;
@@ -27,16 +31,23 @@ my %watchers;
 my %lmod;
 my $twitter;
 
+mkpath $logdir unless -d $logdir;
+my $logger = File::Stamped->new(pattern => "$logdir/$env.log.%Y%m");
+local $Log::Minimal::PRINT = sub {
+  my ($time, $type, $message, $trace) = @_;
+  $logger->print("$time [$type] $message\n");
+};
+
 $irc->reg_cb(
   connect => sub {
     my ($self, $err) = @_;
     if (defined $err) {
-      print STDERR "Couldn't connect to server: $err\n";
+      critf("Couldn't connect to server: $err");
       return;
     }
   },
   registered => sub { $irc->enable_ping(60) },
-  disconnect => sub { print STDERR "disconnected: $_[1]\n"; exit },
+  disconnect => sub { infof("disconnected: $_[1]"); exit },
 );
 $irc->connect(
   $conf{irc}{host},
@@ -50,11 +61,11 @@ $twitter = Net::Twitter::Lite::WithAPIv1_1->new(%{ $conf{twitter} }) if $conf{tw
 set_watchers();
 
 $SIG{HUP} = sub {
-  print "reloading...\n" if $debug;
+  infof("reloading...");
   %urls = load_urls();
   delete $watchers{$_} for keys %watchers;
   set_watchers();
-  print "done\n\n" if $debug;
+  infof("reloaded");
   return;
 };
 
@@ -62,7 +73,7 @@ $cv->wait;
 
 sub set_watchers {
   for my $name (keys %urls) {
-    print STDERR "loading $name\n" if $debug;
+    infof("loading $name");
     $watchers{$name} = AnyEvent->timer(
       interval => 60,
       cb => sub {
@@ -75,6 +86,9 @@ sub set_watchers {
           if ($headers->{Status} =~ /^2/) {
             my $cached = load_cache($name);
             my $dry_run = !cache_exists($name);
+            if ($dry_run) {
+              infof("dry_run: $name");
+            }
             my $cache = {};
             eval {
               my $feed = XML::Feed->parse(\$xml);
@@ -98,6 +112,7 @@ sub set_watchers {
                     "\001ACTION \002$title:\002 $msg\001"
                   );
                   eval { $twitter->update("$title: $msg") } if $twitter;
+                  infof("$name: $msg");
                 }
                 $cache->{$md5} = 1;
               }
@@ -110,7 +125,7 @@ sub set_watchers {
             # do nothing
           }
           else {
-            # warn "$headers->{Status} $headers->{Reason}";
+            warnf("$name: $headers->{Status} $headers->{Reason}");
           }
         };
       },
@@ -146,7 +161,7 @@ sub load_urls {
 
 sub load_config {
   my $file = "$confdir/$env.conf";
-  die "$file not found" unless -f $file;
+  croakf("$file not found") unless -f $file;
   do $file;
 }
 
