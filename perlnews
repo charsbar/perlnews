@@ -90,7 +90,7 @@ sub set_watchers {
           my ($xml, $headers) = @_;
           if ($headers->{Status} =~ /^2/) {
             my $cached = load_cache($name);
-            my $dry_run = !cache_exists($name);
+            my $dry_run = !cache_exists($name) || !%{$cached};
             if ($dry_run) {
               infof("dry_run: $name");
             }
