@@ -7,6 +7,7 @@ use AnyEvent::IRC::Client;
 use AnyEvent::HTTP;
 use Digest::MD5 ();
 use Encode ();
+use Fcntl ':flock';
 use File::Path;
 use File::Stamped;
 use JSON::XS ();
@@ -153,8 +154,11 @@ sub save_cache {
   }
   mkdir $cachedir unless -d $cachedir;
   my $file = "$cachedir/$_[0].json";
-  open my $fh, '>', $file or die $!;
-  print $fh JSON::XS::encode_json($_[1] || {});
+  open my $fh, '>', "$file.tmp" or die $!;
+  flock $fh, LOCK_EX or die $!;
+  print $fh JSON::XS::encode_json($_[1]);
+  close $fh;
+  rename "$file.tmp" => $file;
 }
 
 sub cache_exists {
